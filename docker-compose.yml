@@ -1,0 +1,139 @@
+version: "2"
+services:
+  #Jackett
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Bogota
+    volumes:
+      - ./jackett/data:/config
+      - ./jackett/blackhole:/downloads
+    ports:
+      - 9117:9117
+
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.2
+    restart: unless-stopped
+
+  #Sonarr
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Bogota
+    volumes:
+      - ./sonarr/data:/config
+      - ./common/media/tv:/tv
+      - ./common/downloads:/downloads
+    ports:
+      - 8989:8989
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.3
+    restart: unless-stopped
+
+  #Torrent
+  qbittorrent:
+    image: linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Bogota
+      - UMASK_SET=022
+      - WEBUI_PORT=8080
+    volumes:
+      - ./qbittorrent/config:/config
+      - ./common/downloads:/downloads
+    ports:
+      - 6881:6881
+      - 6881:6881/udp
+      - 8080:8080
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.4
+    restart: unless-stopped
+
+  #Plex
+  plex:
+    container_name: plex
+    image: plexinc/pms-docker
+    restart: unless-stopped
+    ports:
+      - 32400:32400/tcp
+      - 3005:3005/tcp
+      - 8324:8324/tcp
+      - 32469:32469/tcp
+      - 1900:1900/udp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+    environment:
+      - PLEX_UID=0
+      - PLEX_GID=0
+      - TZ=America/Bogota 
+      - PLEX_CLAIM=claim-R4xsKGQomx1iqDDesZkm
+      - ADVERTISE_IP=http://10.2.0.88:32400/
+    hostname: homeserver
+    volumes:
+      - ./plex/database:/config
+      - ./plex/transcode/temp:/transcode
+      - ./common/media:/data
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.5
+
+  #Radarr
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Bogota
+    volumes:
+      - ./radarr/data:/config
+      - ./common/media/movies:/movies
+      - ./common/downloads:/downloads
+    ports:
+      - 7878:7878
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.6
+    restart: unless-stopped
+
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=America/Bogota
+    volumes:
+      - ./bazarr/config:/config
+      - ./common/media/movies:/movies
+      - ./common/media/tv:/tv
+    ports:
+      - 6767:6767
+    networks:
+      mediaServerNet:
+        ipv4_address: 10.5.0.7
+    restart: unless-stopped
+
+
+
+#network
+networks:
+  mediaServerNet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
